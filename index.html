@@ -26,6 +26,7 @@ textarea{width:100%;min-height:110px}.sc{overflow-x:auto}@media (pointer:coarse)
 <div class="c"><h3>三菱UFJ銀行明細取込</h3><textarea id="bt" placeholder="明細画面をコピーして貼り付け"></textarea><p><button class="p" id="bb">取り込む</button></p></div>
 <div class="c"><h3>三井住友銀行明細取込</h3><input type="file" id="fb" accept=".csv,.txt" multiple><p class="mu">1行目が「年月日・お引き出し・お預け入れ・お取引内容・残高」のCSVに対応しています。複数ファイルを選べます。</p><p><button class="p" id="b2">取り込む</button> <button id="bdel">摘要が空の明細を削除</button></p></div>
 <div class="c"><h3>埼玉りそな銀行明細取込</h3><input type="file" id="fr" accept=".csv,.txt" multiple><p class="mu">1行目が「取引日・摘要・お支払金額・お預り金額・取引後残高・メモ」のCSVに対応しています。複数ファイルを選べます。</p><p><button class="p" id="b3">取り込む</button></p></div>
+<div class="c"><h3>武蔵野銀行明細取込</h3><textarea id="mt" placeholder="明細の行だけを貼り付け（見出し行は不要）"></textarea><p class="mu">「2025-01-10 出 4,490 摘要 残高」の形の行に対応しています。出か入かで、支出か収入かを判断します。</p><p><button class="p" id="b4">取り込む</button></p></div>
 <div id="msg" class="c mu">取込結果がここに出ます。</div></div>
 <div id="cls" class="v" hidden></div>
 <div id="ana" class="v"></div>
@@ -203,4 +204,9 @@ const H=R[hi],fi=fn=>H.findIndex(fn),iD=fi(isH),iN=(i=>i<0?1:i)(fi(c=>c.includes
 for(const r of R.slice(hi+1)){const dt=pd(r[iD]||''),o=num(r[iO]),n=num(r[iI]),a=o?o:(n?-n:0);if(!dt){if((r[iD]||'').trim())BAD++;continue}if(!a)continue;L.push({src:'bank',date:dt,desc:(r[iN]||'').trim(),amount:a,bal:'B3:'+(r[iB]||'').trim()})}
 const[x,y]=add(L);A+=x;SK+=y}
 m.textContent=`埼玉りそな銀行: ${fs.length}ファイル、${A}件追加、${SK}件は重複のため除外`+(BAD?`／日付を読み取れない行: ${BAD}件`:'')+(ER.length?`／読み取れなかったファイル: ${ER.join(', ')}`:'');$('#fr').value='';render()};
+
+$('#b4').onclick=()=>{const L=[];let bad=0;const re=/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})[\t ]+(出|入)[\t ]+([\d,]+)(?:[\t ]+(.*?))?[\t ]+([\d,]+)$/,re2=/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})[\t ]+(出|入)[\t ]+([\d,]+)(?:[\t ]+(.*?))?[\t ]+([\d,]+)[\t ]+\S.*$/;
+for(const ln of $('#mt').value.split('\n')){const l=ln.replace(/\u3000/g,' ').trim();if(!l)continue;const q=l.match(re)||l.match(re2);if(!q){if(/^\d{4}[-\/]/.test(l))bad++;continue}
+const a=num(q[5]);if(!a)continue;L.push({src:'bank',date:q[1]+'-'+q[2].padStart(2,'0')+'-'+q[3].padStart(2,'0'),desc:(q[6]||'').replace(/\s+/g,' ').trim(),amount:q[4]=='入'?-a:a,bal:'B4:'+q[7]})}
+const[x,y]=add(L);$('#msg').textContent=`武蔵野銀行: ${x}件追加、${y}件は重複のため除外`+(bad?`／読み取れない行: ${bad}件`:'');$('#mt').value='';render()};
 </script></body></html>
