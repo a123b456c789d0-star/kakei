@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8"><title>家計ツール</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{--in:#5b9bd5;--out:#ef8f4a;--bg:#f6f7f9;--card:#fff;--tx:#1f2430;--mu:#6b7280;--ac:#3b6fd4;--ac2:#9db8ee;--bd:#e3e6ea;--ng:#c0392b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--in:#7fb4ec;--out:#f4a261;--bg:#15171c;--card:#1f232b;--tx:#e8eaee;--mu:#98a0ad;--ac:#6c9bff;--ac2:#34518f;--bd:#2f3541;--ng:#ff8a7a}}
+:root[data-theme="dark"]{--in:#7fb4ec;--out:#f4a261;--bg:#15171c;--card:#1f232b;--tx:#e8eaee;--mu:#98a0ad;--ac:#6c9bff;--ac2:#34518f;--bd:#2f3541;--ng:#ff8a7a}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 -apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;max-width:720px;margin:auto;padding:12px 12px 96px}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;align-items:center;background:var(--card);border-top:1px solid var(--bd);padding:6px 0 calc(6px + env(safe-area-inset-bottom,0px))}
+nav button{flex:1;border:0;background:none;border-radius:0;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;color:var(--mu);padding:2px}nav button.on{color:var(--ac);background:none}nav .pl{margin-top:-26px;width:48px;height:48px;border-radius:50%;background:var(--ac);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.25)}#bdg:not(:empty){position:absolute;top:-4px;right:-12px;background:#e5484d;color:#fff;border-radius:999px;padding:0 5px;font-size:10px}
+button,select,input,textarea{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px 10px}
+button{cursor:pointer}button.on,button.p{background:var(--ac);color:#fff;border-color:var(--ac)}
+.c{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
+h3{margin:0 0 8px;font-size:15px}.mu{color:var(--mu);font-size:13px}
+.r{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd)}
+.r:last-child{border:0}.bar{height:6px;background:var(--ac);border-radius:3px;margin-top:3px}
+.g{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center}.g b{display:block;font-size:17px}
+textarea{width:100%;min-height:110px}.sc{overflow-x:auto}input[type=file]{width:100%;max-width:100%;min-width:0}.ex{opacity:.45}.ng{color:var(--ng)}
+</style></head><body>
+<div id="gt" style="position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px"><div class="c" style="width:100%;max-width:360px"><h3>ログイン</h3><input id="em" type="email" placeholder="メールアドレス" autocomplete="username" style="width:100%;margin-bottom:8px"><input id="pw" type="password" placeholder="パスワード" autocomplete="current-password" style="width:100%"><p><button class="p" id="lg">ログイン</button></p><p class="mu" id="le"></p></div></div>
+<div id="ss" class="mu" style="position:fixed;top:4px;right:10px;font-size:11px;z-index:30"></div>
+<nav><button data-t="ana" class="on"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>ホーム</button><button data-t="lst"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>明細</button><button data-t="imp"><span class="pl"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>取込</button><button data-t="cls"><span style="position:relative"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12l-8 8-9-9V3h8z"/></svg><span id="bdg"></span></span>分類</button><button data-t="set"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/></svg>設定</button></nav>
+<div id="imp" class="v" hidden>
+<div class="c"><h3>カード明細CSV</h3><input type="file" id="fc" accept=".csv,.txt" multiple><p class="mu">複数ファイルを選べます。支払金額は「当月支払金額」列を使います。</p><p><button class="p" id="cb">取り込む</button></p></div>
+<div class="c"><h3>銀行明細（貼り付け）</h3><textarea id="bt" placeholder="明細画面をコピーして貼り付け"></textarea><p><button class="p" id="bb">取り込む</button></p></div>
+<div id="msg" class="c mu">取込結果がここに出ます。</div></div>
+<div id="cls" class="v" hidden></div>
+<div id="ana" class="v"></div>
+<div id="lst" class="v" hidden><div class="c"><select id="lmn" style="width:100%"></select><input id="lq" placeholder="店名・摘要で検索" style="width:100%;margin-top:8px"><input type="checkbox" id="lu" hidden><div id="lc" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div></div><div id="ll"></div></div>
+<div id="set" class="v" hidden><div id="sh" hidden></div><div id="sm"></div><div id="cm"></div><div id="ci"></div>
+<div class="c"><h3>支出から除外する摘要（カード引落）</h3><input id="ex" style="width:100%"><p class="mu">カンマ区切り。銀行の摘要にこの文字を含む行は支出に数えません。</p><button id="exs">保存</button></div>
+
+<div class="c"><h3>カードの集計月</h3><select id="md"><option value="pay">お支払日の月（銀行の引落月に合う）</option><option value="use">利用日の月</option></select></div>
+<div class="c"><h3>バックアップ</h3><textarea id="bk"></textarea><p><button id="bo">書き出し</button> <button id="bi">読み込み</button></p><p class="mu" id="bm"></p></div>
+<div class="c"><h3>登録済みルール</h3><p class="mu">分類を間違えたときはここで変更・削除できます。</p><input id="rq" placeholder="店名で検索" style="width:100%"><div id="rl"></div></div></div>
+<script>
+const DG={'生活費':['スーパー','ドラッグストア','日用品'],'食費':['食費','外食'],'交通':['交通'],'住居':['住居'],'光熱費・通信':['光熱費','通信'],'娯楽・衣服':['娯楽','衣服'],'医療・教育':['医療','教育','保険'],'その他':['現金出金','税金','その他']};
+let S={tx:[],rules:{},excl:['PAYPAYカ']},M=null;
+
+const save=()=>{qsync()};
+const ini=()=>{if(!S.groups)S.groups=JSON.parse(JSON.stringify(DG));if(!S.fix)S.fix=['住居','光熱費','通信','保険','税金'];if(!S.inc)S.inc=['給与','賞与','利息','還付・給付','その他収入']};ini();
+const gt=x=>{const o={};for(const[s,v]of Object.entries(x.by)){const g=grp(s);(o[g]=o[g]||{v:0,s:{}}).v+=v;o[g].s[s]=v}return o};
+const COL=['#4e79d8','#e0803d','#4aa66b','#c8506d','#8e6cc9','#d2a73a','#3bb0c4','#8c8f98','#b0674a','#6aa84f'],col=g=>{const i=Object.keys(S.groups).indexOf(g);return i<0?'#9aa0a6':COL[i%COL.length]};
+const subs=()=>Object.values(S.groups).flat(),grp=s=>Object.keys(S.groups).find(g=>S.groups[g].includes(s))||'未分類';
+let LM=null,YR=null,PT='exp',LK='all',SP=null;const lk=t=>LK=='all'||(LK=='un'&&!isEx(t)&&!cat(t))||(LK=='exp'&&!isEx(t)&&!isInc(t))||(LK=='inc'&&isInc(t))||(LK=='ex'&&isEx(t));const lf=t=>(LM=='all'||mk(t)==LM)&&norm(t.desc).includes(norm($('#lq').value||''))&&(lk(t));
+const incOpts=()=>'<option value="">選択</option>'+S.inc.map(c=>`<option>${esc(c)}</option>`).join('');
+const catSelX=(cur,inc)=>inc?'<option value="">未分類</option>'+S.inc.map(c=>`<option${c==cur?' selected':''}>${esc(c)}</option>`).join(''):catSel(cur);
+const catSel=cur=>'<option value="">未分類</option>'+Object.entries(S.groups).map(([g,a])=>`<optgroup label="${esc(g)}">${a.map(c=>`<option${c==cur?' selected':''}>${esc(c)}</option>`).join('')}</optgroup>`).join('');
+function rr(){const q=norm($('#rq').value||''),a=Object.entries(S.rules).filter(([k])=>k.includes(q));$('#rl').innerHTML=a.slice(0,50).map(([k,v])=>`<div class="r" style="flex-wrap:wrap"><span style="flex:1 1 100%;word-break:break-all">${esc(k)}</span><select data-rk="${esc(k)}">${catSel(v)}<optgroup label="収入">${S.inc.map(c=>`<option${c==v?' selected':''}>${esc(c)}</option>`).join('')}</optgroup></select><button data-rd="${esc(k)}">✕</button></div>`).join('')+(a.length>50?`<p class="mu">他${a.length-50}件（検索で絞り込めます）</p>`:'')||'<span class="mu">なし</span>'}
+const catOpts=()=>'<option value="">選択</option>'+Object.entries(S.groups).map(([g,a])=>`<optgroup label="${esc(g)}">${a.map(c=>`<option>${esc(c)}</option>`).join('')}</optgroup>`).join('');
+function rc(){$('#cm').innerHTML=`<div class="c"><h3>カテゴリ管理</h3><p class="mu">小カテゴリ名をタップすると固定費(📌)の切替。✕で削除。</p>${Object.entries(S.groups).map(([g,a])=>`<div style="padding:8px 0;border-bottom:1px solid var(--bd)"><b>${esc(g)}</b> <button data-dg="${esc(g)}">グループ削除</button><div style="margin:6px 0;display:flex;flex-wrap:wrap;gap:4px">${a.map(s=>`<span><button data-fx="${esc(s)}" class="${S.fix.includes(s)?'on':''}">${esc(s)}${S.fix.includes(s)?' 📌':''}</button><button data-ds="${esc(s)}" data-g="${esc(g)}">✕</button></span>`).join('')}</div><input data-ni="${esc(g)}" placeholder="小カテゴリ名"> <button data-as="${esc(g)}">追加</button></div>`).join('')}<p><input id="ng" placeholder="新しい大カテゴリ名"> <button id="ag">大カテゴリ追加</button></p></div><div class="c"><h3>収入カテゴリ</h3><div style="display:flex;flex-wrap:wrap;gap:4px">${S.inc.map(s=>`<button data-di="${esc(s)}">${esc(s)} ✕</button>`).join('')}</div><p><input id="ni" placeholder="収入カテゴリ名"> <button id="ai">追加</button></p></div>`}
+const $=s=>document.querySelector(s),norm=s=>String(s).normalize('NFKC').toLowerCase(),esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const yen=n=>Math.round(n).toLocaleString('ja-JP')+'円',num=s=>{const n=parseFloat(norm(s).replace(/[,円¥\s]/g,''));return isNaN(n)?null:n};
+const isEx=t=>t.src=='bank'&&S.excl.some(k=>k&&norm(t.desc).includes(norm(k)));
+const isInc=t=>t.src=='bank'&&t.amount<0;
+function cat(t){const d=norm(t.desc);let b='',l=0;for(const k in S.rules)if(k.length>l&&d.includes(k)){b=S.rules[k];l=k.length}return (isInc(t)?S.inc:subs()).includes(b)?b:''}
+const act=()=>S.tx.filter(t=>!isEx(t));
+function pdate(s){s=norm(s);let m=s.match(/(\d{4})[\/\-年](\d{1,2})[\/\-月](\d{1,2})/);if(m)return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');m=s.match(/(\d{2})[\/\-](\d{1,2})[\/\-](\d{1,2})/);return m?'20'+m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0'):null}
+function csv(t,d){const R=[];let r=[],f='',q=false;for(let i=0;i<t.length;i++){const c=t[i];if(q){if(c=='"'){if(t[i+1]=='"'){f+='"';i++}else q=false}else f+=c}else if(c=='"')q=true;else if(c==d){r.push(f);f=''}else if(c=='\n'){r.push(f);R.push(r);r=[];f=''}else if(c!='\r')f+=c}if(f||r.length){r.push(f);R.push(r)}return R}
+function add(list){const have=new Set(S.tx.map(t=>t.id)),cnt={};let a=0,s=0;for(const t of list){const k=t.src+'|'+t.date+'|'+t.desc+'|'+t.amount+'|'+(t.bal||'');cnt[k]=(cnt[k]||0)+1;t.id=k+'#'+cnt[k];if(have.has(t.id)){s++;continue}delete t.bal;S.tx.push(t);a++}if(a&&list[0])(S.last=S.last||{})[list[0].src]=new Date().toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'});save();return[a,s]}
+$('#cb').onclick=async()=>{const fs=[...$('#fc').files];if(!fs.length){$('#msg').textContent='ファイルを選択してください。';return}let A=0,SK=0,ER=[];for(const f of fs){const b=await f.arrayBuffer();let t=new TextDecoder('shift_jis').decode(b);if(!t.includes('利用日'))t=new TextDecoder('utf-8').decode(b);
+const d=t.split('\n')[0].includes('\t')&&!t.split('\n')[0].includes(',')?'\t':',',R=csv(t,d),hi=R.findIndex(r=>r.some(c=>c.includes('利用日')));
+if(hi<0){ER.push(f.name);continue}
+const H=R[hi],ix=n=>H.findIndex(c=>c.trim()==n),iD=H.findIndex(c=>c.includes('利用日')),iN=ix('利用店名・商品名'),iP=ix('当月支払金額'),iU=ix('利用金額'),iY=ix('当月お支払日'),L=[];
+for(const r of R.slice(hi+1)){const dt=pdate(r[iD]||'');let a=num(r[iP]);if(a===null)a=num(r[iU]);if(!dt||!a)continue;L.push({src:'card',date:dt,pay:pdate(r[iY]||'')||undefined,desc:(r[iN]||'').trim(),amount:a})}
+const[a,s]=add(L);A+=a;SK+=s}$('#msg').textContent=`カード: ${fs.length}ファイル、${A}件追加、${SK}件は重複のため除外`+(ER.length?`／読み取れなかったファイル: ${ER.join(', ')}`:'');$('#fc').value='';render()};
+$('#bb').onclick=()=>{let y=new Date().getFullYear(),L=[];for(const ln of $('#bt').value.split('\n')){const ym=ln.trim().match(/^(\d{4})年$/);if(ym){y=+ym[1];continue}
+const m=ln.match(/^\s*(\d{1,2})月(\d{1,2})日/);if(!m)continue;let p=ln.split('\t');if(p.length<4)p=ln.split(/\s{2,}/);if(p.length<4)continue;
+const o=num(p[1]),i=num(p[2]),a=o?o:(i?-i:0);if(!a)continue;L.push({src:'bank',date:y+'-'+m[1].padStart(2,'0')+'-'+m[2].padStart(2,'0'),desc:p[3].trim(),amount:a,bal:(p[4]||'').trim()})}
+const[a,s]=add(L);$('#msg').textContent=`銀行: ${a}件追加、${s}件は重複のため除外`;$('#bt').value='';render()};
+const mk=t=>(S.mode!='use'&&t.pay?t.pay:t.date).slice(0,7),pm=m=>{const[y,o]=m.split('-');const d=new Date(+y,o-2,1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')};
+function tot(m){const r={exp:0,inc:0,fix:0,by:{},ib:{}};for(const t of act()){if(mk(t)!=m)continue;if(isInc(t)){r.inc-=t.amount;const c=cat(t)||'未分類';r.ib[c]=(r.ib[c]||0)-t.amount;continue}const c=cat(t)||'未分類';r.exp+=t.amount;r.by[c]=(r.by[c]||0)+t.amount;if(S.fix.includes(c))r.fix+=t.amount}return r}
+function render(){const ms=[...new Set(act().map(mk))].sort();if(!M||!ms.includes(M))M=ms[ms.length-1];
+// 分類
+const un={};act().filter(t=>!cat(t)).forEach(t=>{const k=norm(t.desc);(un[k]=un[k]||{d:t.desc,n:0,s:0,i:isInc(t)});un[k].n++;un[k].s+=Math.abs(t.amount)});window.U=Object.values(un).sort((a,b)=>b.s-a.s);
+$('#cls').innerHTML=U.length?`<div class="c"><h3>未分類 ${U.length}件</h3><p class="mu">キーワードを部分一致に編集して登録できます。</p>${U.map((u,i)=>`<div class="r" style="flex-wrap:wrap"><input data-k="${i}" value="${esc(u.d)}" style="flex:1 1 100%"><span class="mu">${u.i?'収入 ':''}${u.n}件 ${yen(u.s)}</span><select data-s="${i}">${u.i?incOpts():catOpts()}</select></div>`).join('')}</div>`:'<div class="c">未分類はありません 🎉</div>';
+// 分析
+if(!ms.length){$('#ana').innerHTML='<div class="c mu">データがありません。まず取込してください。</div>'}else{
+const t=tot(M),p=tot(pm(M)),last=ms.slice(-12),mx=Math.max(...last.map(m=>tot(m).exp),1),W=360/last.length;
+const bars=last.map((m,i)=>{let y=130;const rs=Object.entries(gt(tot(m))).sort((a,b)=>b[1].v-a[1].v).map(([g,o])=>{const h=Math.max(o.v,0)/mx*120;y-=h;return`<rect x="${i*W+4}" y="${y}" width="${W-8}" height="${h}" fill="${col(g)}" opacity="${m==M?1:.6}"/>`}).join('');return`<g data-m="${m}" style="cursor:pointer">${rs}<text x="${i*W+W/2}" y="146" font-size="10" text-anchor="middle" fill="var(--mu)">${+m.slice(5)}月</text></g>`}).join('');
+const ys=[...new Set(ms.map(m=>m.slice(0,4)))].sort();if(!YR||!ys.includes(YR))YR=M.slice(0,4);const YM=Array.from({length:12},(_,i)=>YR+'-'+String(i+1).padStart(2,'0')).map(m=>[m,tot(m)]),YE=YM.reduce((a,x)=>a+x[1].exp,0),YI=YM.reduce((a,x)=>a+x[1].inc,0),ymx=Math.max(...YM.map(x=>Math.max(x[1].exp,x[1].inc)),1);
+const YIB={};YM.forEach(x=>{for(const k in x[1].ib)YIB[k]=(YIB[k]||0)+x[1].ib[k]});
+const ibar=(o,po)=>{const e=Object.entries(o).sort((a,b)=>b[1]-a[1]),m=Math.max(e[0]?e[0][1]:1,1);return e.map(([k,v])=>{const d=po?v-(po[k]||0):0;return`<div style="padding:4px 0"><div class="r" style="border:0;padding:0"><span>${esc(k)}</span><span>${yen(v)}${po?` <span class="mu">(${d>=0?'+':''}${Math.round(d).toLocaleString()})</span>`:''}</span></div><div class="bar" style="width:${Math.max(v,0)/m*100}%;background:var(--in)"></div></div>`}).join('')||'<span class="mu">なし</span>'};
+const G=gt(t),PG=gt(p),cs=Object.entries(G).sort((a,b)=>b[1].v-a[1].v),cm=Math.max(cs[0]?cs[0][1].v:1,1);
+const cf=g=>PT=='inc'?COL[pp.findIndex(x=>x[0]==g)%COL.length]:col(g);const fp=t.exp>0?Math.min(100,Math.max(0,Math.round(t.fix/t.exp*100))):0,up=Object.entries(t.by).map(([s,v])=>[s,v-(p.by[s]||0)]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]).slice(0,3),pp=(PT=='inc'?Object.entries(t.ib).map(([k,v])=>[k,{v}]).sort((a,b)=>b[1].v-a[1].v):cs).filter(x=>x[1].v>0),tp=pp.reduce((a,x)=>a+x[1].v,0)||1,C=314.16;let ac=0;
+const pie=pp.map(([g,o])=>{const f=o.v/tp,s=`<circle r="50" cx="70" cy="70" fill="none" stroke="${cf(g)}" stroke-width="28" stroke-dasharray="${f*C} ${C}" stroke-dashoffset="${-ac*C}" transform="rotate(-90 70 70)"/>`;ac+=f;return s}).join(''),
+leg=pp.map(([g,o])=>`<div class="r" style="border:0;padding:2px 0"><span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${cf(g)}"></span> ${esc(g)}</span><span class="mu">${Math.round(o.v/tp*100)}%</span></div>`).join('');
+$('#ana').innerHTML=`<div class="c"><div class="mu" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px"><button data-t="cls" style="padding:4px 10px">未分類 ${U.length}件</button><span>カード ${(S.last||{}).card||'未取込'}</span><span>銀行 ${(S.last||{}).bank||'未取込'}</span></div><div style="display:flex;justify-content:center;align-items:center;gap:20px;font-weight:700;font-size:16px"><button data-mv="-1" aria-label="前月">‹</button><select id="ms" aria-label="年月を選択" style="appearance:none;-webkit-appearance:none;border:0;background:none;font:inherit;font-weight:700;text-align:center;text-align-last:center;padding:4px 6px;color:inherit">${[...ms].reverse().map(m=>`<option value="${m}"${m==M?' selected':''}>${m.slice(0,4)}年${+m.slice(5)}月</option>`).join('')}</select><span class="mu" aria-hidden="true" style="margin-left:-16px;pointer-events:none">▾</span><button data-mv="1" aria-label="翌月">›</button></div>
+<div style="text-align:center;margin-top:12px"><div class="mu">今月の収支</div><div style="font-size:28px;font-weight:700;color:var(--${t.inc-t.exp<0?'out':'in'})">${yen(t.inc-t.exp)}</div></div><div class="g" style="margin-top:10px"><div><span class="mu">支出</span><b style="color:var(--out)">${yen(t.exp)}</b></div><div><span class="mu">収入</span><b style="color:var(--in)">${yen(t.inc)}</b></div><div><span class="mu">収支</span><b style="color:var(--${t.inc-t.exp<0?'out':'in'})">${yen(t.inc-t.exp)}</b></div></div>
+<p class="mu">前月比 ${t.exp-p.exp>=0?'+':''}${yen(t.exp-p.exp)}</p></div>
+<div class="c"><h3>固定費と変動費</h3><div style="display:flex;height:14px;border-radius:7px;overflow:hidden"><div style="width:${fp}%;background:var(--ac)"></div><div style="width:${100-fp}%;background:var(--ac2)"></div></div><div class="r mu" style="border:0"><span>固定費 ${yen(t.fix)}（${fp}%）</span><span>変動費 ${yen(t.exp-t.fix)}</span></div></div>
+
+<div class="c"><div style="display:flex;background:var(--bd);border-radius:8px;padding:3px;gap:2px;margin-bottom:10px">${['exp','inc'].map(k=>`<button data-pt="${k}" style="flex:1;border:0;${PT==k?'background:var(--card);font-weight:700':'background:none;color:var(--mu)'}">${k=='exp'?'支出':'収入'}</button>`).join('')}</div><div style="display:flex;align-items:center;gap:12px"><svg viewBox="0 0 140 140" width="140" height="140" style="flex:none">${pie}<text x="70" y="75" text-anchor="middle" font-size="13" fill="var(--tx)">${((PT=='inc'?t.inc:t.exp)/10000).toFixed(1)}万</text></svg><div style="flex:1">${leg}</div></div></div>
+<div class="c"><h3>前月より増えたカテゴリ</h3>${up.map(([s,d])=>`<div class="r"><span>${esc(grp(s))} › ${esc(s)}</span><span class="ng">+${yen(d)}</span></div>`).join('')||'<span class="mu">なし</span>'}</div>
+<div class="c"><div class="r" style="border:0"><h3 style="margin:0">収入と支出の推移（年間）</h3><select id="ys">${ys.map(y=>`<option${y==YR?' selected':''}>${y}</option>`).join('')}</select></div><div style="display:flex;align-items:flex-end;justify-content:space-between;height:110px;border-bottom:1px solid var(--bd);margin-top:8px">${YM.map(([m,x])=>`<div style="display:flex;gap:1px;align-items:flex-end"><div style="width:9px;height:${Math.max(x.inc,0)/ymx*100}px;background:var(--in)"></div><div style="width:9px;height:${Math.max(x.exp,0)/ymx*100}px;background:var(--out)"></div></div>`).join('')}</div><div class="mu" style="display:flex;justify-content:space-between;font-size:10px">${YM.map((x,i)=>`<span style="width:19px;text-align:center">${i+1}</span>`).join('')}</div><p class="mu" style="margin:6px 0 0"><span style="color:var(--in)">■</span> 収入 <span style="color:var(--out)">■</span> 支出</p><div class="g" style="margin-top:8px"><div><span class="mu">年間収入</span><b style="color:var(--in)">${yen(YI)}</b></div><div><span class="mu">年間支出</span><b style="color:var(--out)">${yen(YE)}</b></div><div><span class="mu">年間収支</span><b style="color:var(--${YI-YE<0?'out':'in'})">${yen(YI-YE)}</b></div></div></div>
+<div class="c"><h3>収入の内訳（${M}）</h3>${ibar(t.ib,p.ib)}</div>
+<div class="c"><h3>収入の内訳（${YR}年 合計）</h3>${ibar(YIB)}</div>
+<div class="c"><h3>支出のカテゴリ別</h3>${cs.map(([g,o])=>{const d=o.v-(PG[g]?PG[g].v:0);return`<div style="padding:6px 0"><div class="r" style="border:0;padding:0"><b><span style="color:${col(g)}">●</span> ${esc(g)}</b><span>${yen(o.v)} <span class="mu">(${d>=0?'+':''}${Math.round(d).toLocaleString()})</span></span></div><div class="bar" style="width:${Math.max(o.v,0)/cm*100}%;background:${col(g)}"></div>${Object.entries(o.s).sort((a,b)=>b[1]-a[1]).map(([s,v])=>`<div class="r mu" style="border:0;padding:1px 0 1px 12px"><span>${esc(s)}${S.fix.includes(s)?' 📌':''}</span><span>${yen(v)}</span></div>`).join('')}</div>`}).join('')||'<span class="mu">なし</span>'}</div>`}
+// 明細
+const lms=[...new Set(S.tx.map(mk))].sort().reverse();if(LM===null||(LM!='all'&&!lms.includes(LM)))LM=lms[0]||'all';$('#lmn').innerHTML='<option value="all">全期間</option>'+lms.map(m=>`<option>${m}</option>`).join('');$('#lmn').value=LM;$('#ll').innerHTML=`<div class="c"><h3>${LM=='all'?'全期間':LM}の明細</h3>${S.tx.filter(lf).sort((a,b)=>a.date<b.date?1:-1).slice(0,300).map(t=>`<div class="r ${isEx(t)?'ex':''}"><span style="flex:1"><span class="mu">${t.date.slice(5)} ${t.src=='card'?'💳':'🏦'}</span> ${esc(t.desc)}<br>${isEx(t)?'<span class="mu">除外(カード引落)</span>':`${isInc(t)?'<span class="mu">収入 </span>':''}<select data-ct="${esc(t.id)}" style="padding:3px 6px;font-size:13px">${catSelX(cat(t),isInc(t))}</select>`}</span><span>${yen(Math.abs(t.amount))}</span><button data-x="${esc(t.id)}">✕</button></div>`).join('')||'<span class="mu">なし</span>'}</div>`;
+$('#ex').value=S.excl.join(',');$('#md').value=S.mode||'pay';rc();rr()}
+document.addEventListener('click',e=>{const b=e.target.closest('button'),g=e.target.closest('g[data-m]');
+if(g){M=g.dataset.m;render();return}if(!b)return;
+if(b.dataset.t){if(b.dataset.t=='set'){SP=null;render()}document.querySelectorAll('.v').forEach(v=>v.hidden=v.id!=b.dataset.t);document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x.dataset.t==b.dataset.t));return}
+if(b.dataset.x){S.tx=S.tx.filter(t=>t.id!=b.dataset.x);save();render()}
+const D=b.dataset;if(D.lo){sb.auth.signOut().then(()=>location.reload())}if(D.pt){PT=D.pt;render()}if(D.lk){LK=D.lk;render()}if(D.sp!==undefined){SP=D.sp||null;render();scrollTo(0,0)}if(D.mv){const a=[...new Set(act().map(mk))].sort(),i=a.indexOf(M)+ +D.mv;if(a[i]){M=a[i];render()}}
+if(D.dg){delete S.groups[D.dg];save();render()}
+if(D.ds){S.groups[D.g]=S.groups[D.g].filter(x=>x!=D.ds);S.fix=S.fix.filter(x=>x!=D.ds);save();render()}
+if(D.fx){S.fix=S.fix.includes(D.fx)?S.fix.filter(x=>x!=D.fx):[...S.fix,D.fx];save();render()}
+if(D.as){const i=[...document.querySelectorAll('input[data-ni]')].find(x=>x.dataset.ni==D.as),v=i.value.trim();if(v&&!subs().includes(v)){S.groups[D.as].push(v);save();render()}}
+if(b.id=='ag'){const v=$('#ng').value.trim();if(v&&!S.groups[v]){S.groups[v]=[];save();render()}}
+if(D.rd!==undefined){delete S.rules[D.rd];save();render()}
+if(D.di!==undefined){S.inc=S.inc.filter(x=>x!=D.di);save();render()}
+if(b.id=='ai'){const v=$('#ni').value.trim();if(v&&!S.inc.includes(v)){S.inc.push(v);save();render()}}});
+document.addEventListener('change',e=>{const s=e.target;if(s.id=='ms'){M=s.value;render()}if(s.id=='md'){S.mode=s.value;save();render()}if(s.id=='lmn'){LM=s.value;render()}if(s.id=='ys'){YR=s.value;render()}
+if(s.dataset.ct!==undefined){const t=S.tx.find(x=>x.id==s.dataset.ct);if(t){S.rules[norm(t.desc)]=s.value;save();render()}}
+if(s.dataset.rk!==undefined){S.rules[s.dataset.rk]=s.value;save();render()}
+if(s.dataset.s!==undefined&&s.value){const i=s.dataset.s,k=norm(document.querySelector(`input[data-k="${i}"]`).value.trim());if(k){S.rules[k]=s.value;save();render()}}});
+function rs(){const T={cat:'カテゴリ管理',inc:'収入カテゴリ',rules:'登録済みルール',md:'カードの集計月',ex:'除外する摘要',bk:'バックアップ・復元'},cm=$('#cm'),cd={cat:cm,inc:$('#ci'),rules:$('#rq').closest('.c'),md:$('#md').closest('.c'),ex:$('#ex').closest('.c'),bk:$('#bk').closest('.c')};
+if(cm.children.length>1){$('#ci').innerHTML='';$('#ci').appendChild(cm.children[1])}
+for(const k in cd)cd[k].hidden=SP!=k;
+const r=(k,s)=>`<button data-sp="${k}" style="width:100%;display:flex;justify-content:space-between;align-items:center;text-align:left;border:0;border-bottom:1px solid var(--bd);border-radius:0;padding:14px"><span>${T[k]}<br><span class="mu">${esc(s)}</span></span><span class="mu">›</span></button>`,g=(t,x)=>`<div class="mu" style="padding:12px 4px 4px">${t}</div><div class="c" style="padding:0;overflow:hidden">${x}</div>`;
+$('#sm').hidden=!!SP;$('#sh').hidden=!SP;$('#sh').innerHTML=SP?`<div class="c" style="display:flex;align-items:center;gap:8px"><button data-sp="">‹</button><b>${T[SP]}</b></div>`:'';
+$('#sm').innerHTML=g('分類',r('cat',`${Object.keys(S.groups).length}グループ・${subs().length}項目`)+r('inc',`${S.inc.length}項目`)+r('rules',`${Object.keys(S.rules).length}件`))+g('集計',r('md',S.mode=='use'?'利用日の月':'お支払日の月')+r('ex',S.excl.join('、')||'なし'))+g('データ',r('bk','JSONで書き出し・読み込み'))+'<p><button data-lo="1">ログアウト</button></p>'}
+function ext(){$('#bdg').textContent=U.length||'';
+$('#lc').innerHTML=[['all','すべて'],['un','未分類'],['exp','支出'],['inc','収入'],['ex','除外']].map(([k,n])=>`<button data-lk="${k}" class="${LK==k?'p':''}" style="border-radius:999px;padding:4px 12px;font-size:12px">${n}</button>`).join('');
+let pd='';$('#ll').innerHTML=S.tx.filter(lf).sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0).slice(0,300).map(t=>{const h=t.date!=pd?(pd=t.date,`<div class="mu" style="padding:8px 4px 2px">${+t.date.slice(5,7)}月${+t.date.slice(8)}日</div>`):'',inc=isInc(t),ex=isEx(t),c=cat(t),cl=inc?'var(--in)':(c?col(grp(c)):'#c9ced6');
+return h+`<div class="r ${ex?'ex':''}" style="background:var(--card);padding:8px 12px;border-bottom:1px solid var(--bd)"><span style="width:30px;height:30px;border-radius:50%;background:${cl};flex:none"></span><span style="flex:1;min-width:0">${esc(t.desc)}<br>${ex?'<span class="mu">除外（カード引落）</span>':`<select data-ct="${esc(t.id)}" style="padding:2px 6px;font-size:12px;margin-top:2px">${catSelX(c,inc)}</select>`} <span class="mu" style="font-size:11px">${t.src=='card'?'カード':'銀行'}</span></span><b style="color:${inc?'var(--in)':'inherit'}">${inc?'+':''}${yen(Math.abs(t.amount))}</b><button data-x="${esc(t.id)}">✕</button></div>`}).join('')||'<div class="c mu">なし</div>';rs()}
+const _R=render;render=function(){_R();ext()};
+$('#rq').oninput=()=>rr();$('#lq').oninput=()=>render();$('#lu').onchange=()=>render();
+$('#exs').onclick=()=>{S.excl=$('#ex').value.split(',').map(x=>x.trim()).filter(Boolean);save();render()};
+$('#bo').onclick=async()=>{const j=JSON.stringify(S);$('#bk').value=j;try{await navigator.clipboard.writeText(j);$('#bm').textContent='コピーしました。メモ等に保存してください。'}catch(e){$('#bm').textContent='欄内を全選択してコピーしてください。'}};
+$('#bi').onclick=()=>{try{const o=JSON.parse($('#bk').value);if(!Array.isArray(o.tx))throw 0;S=Object.assign({tx:[],rules:{},excl:[]},o);ini();save();render();$('#bm').textContent='読み込みました。'}catch(e){$('#bm').textContent='形式が正しくありません。'}};
+render();
+
+const SBU='https://jrrqpvspuxwjnycjtcro.supabase.co',SBK='sb_publishable_n2rk5ws6jwUkOyEaV7NiKQ_-yw7F1cS';
+const sb=supabase.createClient(SBU,SBK);
+let RID=new Set(),busy=false,dirty=false,tm=null;
+const setSt=t=>{$('#ss').textContent=t},gate=v=>{$('#gt').style.display=v?'flex':'none'};
+async function loadAll(){
+const st=await sb.from('app_settings').select('data').eq('id',1).maybeSingle();if(st.error)throw st.error;
+let all=[],from=0;for(;;){const r=await sb.from('transactions').select('*').order('id').range(from,from+999);if(r.error)throw r.error;all=all.concat(r.data);if(r.data.length<1000)break;from+=1000}
+const tx=all.map(r=>({id:r.id,src:r.src,date:r.date,pay:r.pay||undefined,desc:r.descr,amount:Number(r.amount)}));
+S=Object.assign({tx:[],rules:{},excl:['PAYPAYカ']},(st.data&&st.data.data)||{},{tx});ini();RID=new Set(tx.map(t=>t.id))}
+function qsync(){dirty=true;clearTimeout(tm);tm=setTimeout(doSync,800);setSt('保存中…')}
+async function doSync(){if(busy){tm=setTimeout(doSync,800);return}busy=true;dirty=false;
+try{const rest=Object.assign({},S);delete rest.tx;
+let r=await sb.from('app_settings').upsert({id:1,data:rest,updated_at:new Date().toISOString()});if(r.error)throw r.error;
+const L=new Set(S.tx.map(t=>t.id)),ins=S.tx.filter(t=>!RID.has(t.id)),del=[...RID].filter(i=>!L.has(i));
+for(let i=0;i<ins.length;i+=500){const rows=ins.slice(i,i+500).map(t=>({id:t.id,src:t.src,date:t.date,pay:t.pay||null,descr:t.desc,amount:t.amount}));r=await sb.from('transactions').upsert(rows);if(r.error)throw r.error;rows.forEach(x=>RID.add(x.id))}
+for(let i=0;i<del.length;i+=50){const ids=del.slice(i,i+50);r=await sb.from('transactions').delete().in('id',ids);if(r.error)throw r.error;ids.forEach(x=>RID.delete(x))}
+setSt('保存済み')}catch(e){setSt('保存失敗: '+(e.message||e))}finally{busy=false}}
+async function start(){try{setSt('読込中…');await loadAll();gate(false);render();setSt('')}catch(e){$('#le').textContent='読込失敗: '+(e.message||e);gate(true)}}
+$('#lg').onclick=async()=>{$('#le').textContent='';const r=await sb.auth.signInWithPassword({email:$('#em').value.trim(),password:$('#pw').value});if(r.error){$('#le').textContent='ログインできません: '+r.error.message;return}await start()};
+sb.auth.getSession().then(r=>{if(r.data.session)start()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!dirty&&!busy)sb.auth.getSession().then(r=>{if(r.data.session)loadAll().then(render).catch(()=>{})})});
+</script></body></html>
