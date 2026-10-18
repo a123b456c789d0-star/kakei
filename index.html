@@ -25,6 +25,7 @@ textarea{width:100%;min-height:110px}.sc{overflow-x:auto}@media (pointer:coarse)
 <div class="c"><h3>PayPayカード明細取込</h3><input type="file" id="fc" accept=".csv,.txt" multiple><p class="mu">複数ファイルを選べます。支払金額は「当月支払金額」列を使います。</p><p><button class="p" id="cb">取り込む</button></p></div>
 <div class="c"><h3>三菱UFJ銀行明細取込</h3><textarea id="bt" placeholder="明細画面をコピーして貼り付け"></textarea><p><button class="p" id="bb">取り込む</button></p></div>
 <div class="c"><h3>三井住友銀行明細取込</h3><input type="file" id="fb" accept=".csv,.txt" multiple><p class="mu">1行目が「年月日・お引き出し・お預け入れ・お取引内容・残高」のCSVに対応しています。複数ファイルを選べます。</p><p><button class="p" id="b2">取り込む</button> <button id="bdel">摘要が空の明細を削除</button></p></div>
+<div class="c"><h3>埼玉りそな銀行明細取込</h3><input type="file" id="fr" accept=".csv,.txt" multiple><p class="mu">1行目が「取引日・摘要・お支払金額・お預り金額・取引後残高・メモ」のCSVに対応しています。複数ファイルを選べます。</p><p><button class="p" id="b3">取り込む</button></p></div>
 <div id="msg" class="c mu">取込結果がここに出ます。</div></div>
 <div id="cls" class="v" hidden></div>
 <div id="ana" class="v"></div>
@@ -191,4 +192,15 @@ const[x,y]=add(L);A+=x;SK+=y}
 m.textContent=`三井住友銀行: ${fs.length}ファイル、${A}件追加、${SK}件は重複のため除外`+(BAD?`／日付を読み取れない行: ${BAD}件`:'')+(ER.length?`／読み取れなかったファイル: ${ER.join(', ')}`:'');$('#fb').value='';render()};
 
 $('#bdel').onclick=()=>{const n=S.tx.filter(t=>!t.desc).length;S.tx=S.tx.filter(t=>t.desc);save();render();$('#msg').textContent=`摘要が空の明細を${n}件削除しました。`};
+
+$('#b3').onclick=async()=>{const fs=[...$('#fr').files],m=$('#msg');if(!fs.length){m.textContent='ファイルを選択してください。';return}
+const pd=x=>{x=norm(x).trim();let q=x.match(/^(\d{4})(\d{2})(\d{2})$/);if(q)return q[1]+'-'+q[2]+'-'+q[3];q=x.match(/^(?:令和|r)(\d{1,2})[年.\/\-](\d{1,2})[月.\/\-](\d{1,2})/i);if(q)return(2018+ +q[1])+'-'+q[2].padStart(2,'0')+'-'+q[3].padStart(2,'0');return pdate(x)},isH=c=>c.includes('取引日')||c.includes('年月日');
+let A=0,SK=0,BAD=0,ER=[];
+for(const f of fs){const b=await f.arrayBuffer();let t=new TextDecoder('shift_jis').decode(b);if(!/取引日|年月日/.test(t))t=new TextDecoder('utf-8').decode(b);
+const l0=t.split('\n')[0],d=l0.includes('\t')&&!l0.includes(',')?'\t':',',R=csv(t,d),hi=R.findIndex(r=>r.some(isH));
+if(hi<0){ER.push(f.name);continue}
+const H=R[hi],fi=fn=>H.findIndex(fn),iD=fi(isH),iN=(i=>i<0?1:i)(fi(c=>c.includes('摘要'))),iO=fi(c=>c.includes('お支払')||c.includes('出金')||c.includes('引き出し')),iI=fi(c=>c.includes('預')||c.includes('入金')),iB=fi(c=>c.includes('残高')),L=[];
+for(const r of R.slice(hi+1)){const dt=pd(r[iD]||''),o=num(r[iO]),n=num(r[iI]),a=o?o:(n?-n:0);if(!dt){if((r[iD]||'').trim())BAD++;continue}if(!a)continue;L.push({src:'bank',date:dt,desc:(r[iN]||'').trim(),amount:a,bal:'B3:'+(r[iB]||'').trim()})}
+const[x,y]=add(L);A+=x;SK+=y}
+m.textContent=`埼玉りそな銀行: ${fs.length}ファイル、${A}件追加、${SK}件は重複のため除外`+(BAD?`／日付を読み取れない行: ${BAD}件`:'')+(ER.length?`／読み取れなかったファイル: ${ER.join(', ')}`:'');$('#fr').value='';render()};
 </script></body></html>
