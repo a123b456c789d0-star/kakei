@@ -22,9 +22,9 @@ textarea{width:100%;min-height:110px}.sc{overflow-x:auto}@media (pointer:coarse)
 <div id="ss" class="mu" style="position:fixed;top:4px;right:10px;font-size:11px;z-index:30"></div>
 <nav><button data-t="ana" class="on"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>ホーム</button><button data-t="lst"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>明細</button><button data-t="imp"><span class="pl"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>取込</button><button data-t="cls"><span style="position:relative"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12l-8 8-9-9V3h8z"/></svg><span id="bdg"></span></span>分類</button><button data-t="set"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/></svg>設定</button></nav>
 <div id="imp" class="v" hidden>
-<div class="c"><h3>カード明細CSV</h3><input type="file" id="fc" accept=".csv,.txt" multiple><p class="mu">複数ファイルを選べます。支払金額は「当月支払金額」列を使います。</p><p><button class="p" id="cb">取り込む</button></p></div>
-<div class="c"><h3>銀行明細（貼り付け）</h3><textarea id="bt" placeholder="明細画面をコピーして貼り付け"></textarea><p><button class="p" id="bb">取り込む</button></p></div>
-<div class="c"><h3>銀行明細CSV（別口座）</h3><input type="file" id="fb" accept=".csv,.txt" multiple><p class="mu">1行目が「年月日・お引き出し・お預け入れ・お取引内容・残高」のCSVに対応しています。複数ファイルを選べます。</p><p><button class="p" id="b2">取り込む</button> <button id="bdel">摘要が空の明細を削除</button></p></div>
+<div class="c"><h3>PayPayカード明細取込</h3><input type="file" id="fc" accept=".csv,.txt" multiple><p class="mu">複数ファイルを選べます。支払金額は「当月支払金額」列を使います。</p><p><button class="p" id="cb">取り込む</button></p></div>
+<div class="c"><h3>三菱UFJ銀行明細取込</h3><textarea id="bt" placeholder="明細画面をコピーして貼り付け"></textarea><p><button class="p" id="bb">取り込む</button></p></div>
+<div class="c"><h3>三井住友銀行明細取込</h3><input type="file" id="fb" accept=".csv,.txt" multiple><p class="mu">1行目が「年月日・お引き出し・お預け入れ・お取引内容・残高」のCSVに対応しています。複数ファイルを選べます。</p><p><button class="p" id="b2">取り込む</button> <button id="bdel">摘要が空の明細を削除</button></p></div>
 <div id="msg" class="c mu">取込結果がここに出ます。</div></div>
 <div id="cls" class="v" hidden></div>
 <div id="ana" class="v"></div>
@@ -69,11 +69,11 @@ const d=t.split('\n')[0].includes('\t')&&!t.split('\n')[0].includes(',')?'\t':',
 if(hi<0){ER.push(f.name);continue}
 const H=R[hi],ix=n=>H.findIndex(c=>c.trim()==n),iD=H.findIndex(c=>c.includes('利用日')),iN=ix('利用店名・商品名'),iP=ix('当月支払金額'),iU=ix('利用金額'),iY=ix('当月お支払日'),L=[];
 for(const r of R.slice(hi+1)){const dt=pdate(r[iD]||'');let a=num(r[iP]);if(a===null)a=num(r[iU]);if(!dt||!a)continue;L.push({src:'card',date:dt,pay:pdate(r[iY]||'')||undefined,desc:(r[iN]||'').trim(),amount:a})}
-const[a,s]=add(L);A+=a;SK+=s}$('#msg').textContent=`カード: ${fs.length}ファイル、${A}件追加、${SK}件は重複のため除外`+(ER.length?`／読み取れなかったファイル: ${ER.join(', ')}`:'');$('#fc').value='';render()};
+const[a,s]=add(L);A+=a;SK+=s}$('#msg').textContent=`PayPayカード: ${fs.length}ファイル、${A}件追加、${SK}件は重複のため除外`+(ER.length?`／読み取れなかったファイル: ${ER.join(', ')}`:'');$('#fc').value='';render()};
 $('#bb').onclick=()=>{let y=new Date().getFullYear(),L=[];for(const ln of $('#bt').value.split('\n')){const ym=ln.trim().match(/^(\d{4})年$/);if(ym){y=+ym[1];continue}
 const m=ln.match(/^\s*(\d{1,2})月(\d{1,2})日/);if(!m)continue;let p=ln.split('\t');if(p.length<4)p=ln.split(/\s{2,}/);if(p.length<4)continue;
 const o=num(p[1]),i=num(p[2]),a=o?o:(i?-i:0);if(!a)continue;L.push({src:'bank',date:y+'-'+m[1].padStart(2,'0')+'-'+m[2].padStart(2,'0'),desc:p[3].trim(),amount:a,bal:(p[4]||'').trim()})}
-const[a,s]=add(L);$('#msg').textContent=`銀行: ${a}件追加、${s}件は重複のため除外`;$('#bt').value='';render()};
+const[a,s]=add(L);$('#msg').textContent=`三菱UFJ銀行: ${a}件追加、${s}件は重複のため除外`;$('#bt').value='';render()};
 const mk=t=>(S.mode!='use'&&t.pay?t.pay:t.date).slice(0,7),pm=m=>{const[y,o]=m.split('-');const d=new Date(+y,o-2,1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')};
 function tot(m){const r={exp:0,inc:0,fix:0,by:{},ib:{}};for(const t of act()){if(mk(t)!=m)continue;if(isInc(t)){r.inc-=t.amount;const c=cat(t)||'未分類';r.ib[c]=(r.ib[c]||0)-t.amount;continue}const c=cat(t)||'未分類';r.exp+=t.amount;r.by[c]=(r.by[c]||0)+t.amount;if(S.fix.includes(c))r.fix+=t.amount}return r}
 function render(){const ms=[...new Set(act().map(mk))].sort();if(!M||!ms.includes(M))M=ms[ms.length-1];
@@ -189,7 +189,7 @@ if(hi<0){ER.push(f.name);continue}
 const H=R[hi],fi=fn=>H.findIndex(fn),iD=fi(c=>c.includes('年月日')),iO=fi(c=>c.includes('引き出し')||c.includes('出金')),iI=fi(c=>c.includes('預')||c.includes('入金')),iN=(i=>i<0?3:i)(fi(c=>c.includes('内容')||c.includes('摘要')||c.includes('取扱')||c.includes('取り扱'))),iB=fi(c=>c.includes('残高')),L=[];
 for(const r of R.slice(hi+1)){const dt=pd2(r[iD]||''),o=num(r[iO]),n=num(r[iI]),a=o?o:(n?-n:0);if(!dt){if((r[iD]||'').trim())BAD++;continue}if(!a)continue;L.push({src:'bank',date:dt,desc:(r[iN]||'').trim(),amount:a,bal:'B2:'+(r[iB]||'').trim()})}
 const[x,y]=add(L);A+=x;SK+=y}
-m.textContent=`銀行CSV: ${fs.length}ファイル、${A}件追加、${SK}件は重複のため除外`+(BAD?`／日付を読み取れない行: ${BAD}件`:'')+(ER.length?`／読み取れなかったファイル: ${ER.join(', ')}`:'');$('#fb').value='';render()};
+m.textContent=`三井住友銀行: ${fs.length}ファイル、${A}件追加、${SK}件は重複のため除外`+(BAD?`／日付を読み取れない行: ${BAD}件`:'')+(ER.length?`／読み取れなかったファイル: ${ER.join(', ')}`:'');$('#fb').value='';render()};
 
 $('#bdel').onclick=()=>{const n=S.tx.filter(t=>!t.desc).length;S.tx=S.tx.filter(t=>t.desc);save();render();$('#msg').textContent=`摘要が空の明細を${n}件削除しました。`};
 </script></body></html>
