@@ -24,7 +24,7 @@ textarea{width:100%;min-height:110px}.sc{overflow-x:auto}@media (pointer:coarse)
 <div id="imp" class="v" hidden>
 <div class="c"><h3>カード明細CSV</h3><input type="file" id="fc" accept=".csv,.txt" multiple><p class="mu">複数ファイルを選べます。支払金額は「当月支払金額」列を使います。</p><p><button class="p" id="cb">取り込む</button></p></div>
 <div class="c"><h3>銀行明細（貼り付け）</h3><textarea id="bt" placeholder="明細画面をコピーして貼り付け"></textarea><p><button class="p" id="bb">取り込む</button></p></div>
-<div class="c"><h3>銀行明細CSV（別口座）</h3><input type="file" id="fb" accept=".csv,.txt" multiple><p class="mu">1行目が「年月日・お引き出し・お預け入れ・お取引内容・残高」のCSVに対応しています。複数ファイルを選べます。</p><p><button class="p" id="b2">取り込む</button></p></div>
+<div class="c"><h3>銀行明細CSV（別口座）</h3><input type="file" id="fb" accept=".csv,.txt" multiple><p class="mu">1行目が「年月日・お引き出し・お預け入れ・お取引内容・残高」のCSVに対応しています。複数ファイルを選べます。</p><p><button class="p" id="b2">取り込む</button> <button id="bdel">摘要が空の明細を削除</button></p></div>
 <div id="msg" class="c mu">取込結果がここに出ます。</div></div>
 <div id="cls" class="v" hidden></div>
 <div id="ana" class="v"></div>
@@ -186,8 +186,10 @@ let A=0,SK=0,BAD=0,ER=[];
 for(const f of fs){const b=await f.arrayBuffer();let t=new TextDecoder('shift_jis').decode(b);if(!t.includes('年月日'))t=new TextDecoder('utf-8').decode(b);
 const l0=t.split('\n')[0],d=l0.includes('\t')&&!l0.includes(',')?'\t':(!l0.includes(',')&&l0.includes('\u3000')?'\u3000':','),R=csv(t,d),hi=R.findIndex(r=>r.some(c=>c.includes('年月日')));
 if(hi<0){ER.push(f.name);continue}
-const H=R[hi],fi=fn=>H.findIndex(fn),iD=fi(c=>c.includes('年月日')),iO=fi(c=>c.includes('引き出し')||c.includes('出金')),iI=fi(c=>c.includes('預')||c.includes('入金')),iN=fi(c=>c.includes('取引内容')||c.includes('摘要')),iB=fi(c=>c.includes('残高')),L=[];
+const H=R[hi],fi=fn=>H.findIndex(fn),iD=fi(c=>c.includes('年月日')),iO=fi(c=>c.includes('引き出し')||c.includes('出金')),iI=fi(c=>c.includes('預')||c.includes('入金')),iN=(i=>i<0?3:i)(fi(c=>c.includes('内容')||c.includes('摘要')||c.includes('取扱')||c.includes('取り扱'))),iB=fi(c=>c.includes('残高')),L=[];
 for(const r of R.slice(hi+1)){const dt=pd2(r[iD]||''),o=num(r[iO]),n=num(r[iI]),a=o?o:(n?-n:0);if(!dt){if((r[iD]||'').trim())BAD++;continue}if(!a)continue;L.push({src:'bank',date:dt,desc:(r[iN]||'').trim(),amount:a,bal:'B2:'+(r[iB]||'').trim()})}
 const[x,y]=add(L);A+=x;SK+=y}
 m.textContent=`銀行CSV: ${fs.length}ファイル、${A}件追加、${SK}件は重複のため除外`+(BAD?`／日付を読み取れない行: ${BAD}件`:'')+(ER.length?`／読み取れなかったファイル: ${ER.join(', ')}`:'');$('#fb').value='';render()};
+
+$('#bdel').onclick=()=>{const n=S.tx.filter(t=>!t.desc).length;S.tx=S.tx.filter(t=>t.desc);save();render();$('#msg').textContent=`摘要が空の明細を${n}件削除しました。`};
 </script></body></html>
