@@ -239,4 +239,16 @@ const[x,y]=add(L);$('#msg').textContent=`武蔵野銀行: ${x}件追加、${y}�
 function openPK(){const ms=[...new Set(act().map(mk))].sort(),ys=[...new Set(ms.map(m=>m.slice(0,4)))].sort().reverse();
 $('#shp').innerHTML=ys.map(y=>`<div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b>${y}年</b><button data-pv="Y${y}" class="${M=='Y'+y?'p':''}">${y}年累計</button></div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">${ym(y).map(m=>ms.includes(m)?`<button data-pv="${m}" class="${m==M?'p':''}">${+m.slice(5)}月</button>`:`<button disabled style="opacity:.3">${+m.slice(5)}月</button>`).join('')}</div></div>`).join('');$('#sheet').style.display='block'}
 $('#sheet').addEventListener('click',e=>{if(e.target.id=='sheet')e.target.style.display='none'});
+
+function enhance(){document.querySelectorAll('select').forEach(sel=>{let b=sel.nextElementSibling;if(!b||!b.classList.contains('ps')){b=document.createElement('button');b.type='button';b.className='ps';b.style.cssText=sel.style.cssText+';text-align:left';sel.style.display='none';sel.after(b)}
+const o=sel.selectedOptions[0];b.textContent=(o?o.text:'')+' ▾'})}
+let PSel=null;
+const pb=o=>`<button data-po="${[...PSel.options].indexOf(o)}" class="${o.selected?'p':''}" style="display:block;width:100%;text-align:left;margin:3px 0">${esc(o.text)||'　'}</button>`;
+document.addEventListener('click',e=>{const b=e.target.closest('button.ps');if(!b)return;const sel=b.previousElementSibling;if(!sel||sel.tagName!='SELECT')return;PSel=sel;let h='';
+[...sel.children].forEach(c=>{if(c.tagName=='OPTGROUP')h+=`<div class="mu" style="padding:10px 4px 2px">${esc(c.label)}</div>`+[...c.children].map(pb).join('');else h+=pb(c)});
+$('#shp').innerHTML=h;$('#sheet').style.display='block'});
+$('#shp').addEventListener('click',e=>{const b=e.target.closest('button[data-po]');if(!b||!PSel)return;PSel.selectedIndex=+b.dataset.po;$('#sheet').style.display='none';PSel.dispatchEvent(new Event('change',{bubbles:true}))});
+const _R3=render;render=function(){_R3();enhance()};
+const _rr=rr;rr=function(){_rr();enhance()};
+enhance();
 </script></body></html>
