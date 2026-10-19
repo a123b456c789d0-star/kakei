@@ -160,7 +160,7 @@ let r=await sb.from('app_settings').upsert({id:1,data:rest,updated_at:new Date()
 const L=new Set(S.tx.map(t=>t.id)),ins=S.tx.filter(t=>!RID.has(t.id)),del=[...RID].filter(i=>!L.has(i));
 for(let i=0;i<ins.length;i+=500){const rows=ins.slice(i,i+500).map(t=>({id:t.id,src:t.src,date:t.date,pay:t.pay||null,descr:t.desc,amount:t.amount}));r=await sb.from('transactions').upsert(rows);if(r.error)throw r.error;rows.forEach(x=>RID.add(x.id))}
 for(let i=0;i<del.length;i+=50){const ids=del.slice(i,i+50);r=await sb.from('transactions').delete().in('id',ids);if(r.error)throw r.error;ids.forEach(x=>RID.delete(x))}
-setSt('保存済み')}catch(e){setSt('保存失敗: '+(e.message||e))}finally{busy=false}}
+setSt('保存済み');setTimeout(()=>{if($('#ss').textContent=='保存済み')setSt('')},2000)}catch(e){setSt('保存失敗: '+(e.message||e))}finally{busy=false}}
 async function start(){try{setSt('読込中…');await loadAll();gate(false);render();setSt('')}catch(e){$('#le').textContent='読込失敗: '+(e.message||e);gate(true)}}
 $('#lg').onclick=async()=>{$('#le').textContent='';const r=await sb.auth.signInWithPassword({email:$('#em').value.trim(),password:$('#pw').value});if(r.error){$('#le').textContent='ログインできません: '+r.error.message;return}await start()};
 sb.auth.getSession().then(r=>{if(r.data.session)start()});
