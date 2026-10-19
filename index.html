@@ -242,9 +242,10 @@ $('#sheet').addEventListener('click',e=>{if(e.target.id=='sheet')e.target.style.
 function enhance(){document.querySelectorAll('select').forEach(sel=>{let b=sel.nextElementSibling;if(!b||!b.classList.contains('ps')){b=document.createElement('button');b.type='button';b.className='ps';b.style.cssText=sel.style.cssText+';text-align:left';sel.style.display='none';sel.after(b)}
 const o=sel.selectedOptions[0],c=o?oc(o):'';b.innerHTML=(c?`<span style="color:${c}">●</span> `:'')+esc(o?o.text:'')+' ▾'})}
 let PSel=null;
-const pb=o=>`<button data-po="${[...PSel.options].indexOf(o)}" class="${o.selected?'p':''}" style="display:block;width:100%;text-align:left;margin:3px 0">${oc(o)?`<span style="color:${oc(o)}">●</span> `:''}${esc(o.text)||'　'}</button>`;
+const pb=o=>`<button data-po="${[...PSel.options].indexOf(o)}" class="${o.selected?'p':''}" style="display:block;width:100%;text-align:left;margin:0;overflow-wrap:anywhere">${oc(o)?`<span style="color:${oc(o)}">●</span> `:''}${esc(o.text)||'　'}</button>`;
 document.addEventListener('click',e=>{const b=e.target.closest('button.ps');if(!b)return;const sel=b.previousElementSibling;if(!sel||sel.tagName!='SELECT')return;PSel=sel;let h='';
-[...sel.children].forEach(c=>{if(c.tagName=='OPTGROUP')h+=`<div class="mu" style="padding:10px 4px 2px">${S.groups[c.label]?`<span style="color:${col(c.label)}">●</span> `:''}${esc(c.label)}</div>`+[...c.children].map(pb).join('');else h+=pb(c)});
+const G=x=>`<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${x}</div>`,fl=[...sel.children].filter(c=>c.tagName!='OPTGROUP');if(fl.length)h+=G(fl.map(pb).join(''));
+[...sel.children].filter(c=>c.tagName=='OPTGROUP').forEach(c=>{h+=`<div class="mu" style="padding:10px 4px 4px">${S.groups[c.label]?`<span style="color:${col(c.label)}">●</span> `:''}${esc(c.label)}</div>`+G([...c.children].map(pb).join(''))});
 $('#shp').innerHTML=h;$('#sheet').style.display='block'});
 $('#shp').addEventListener('click',e=>{const b=e.target.closest('button[data-po]');if(!b||!PSel)return;PSel.selectedIndex=+b.dataset.po;$('#sheet').style.display='none';PSel.dispatchEvent(new Event('change',{bubbles:true}))});
 const _R3=render;render=function(){_R3();enhance()};
